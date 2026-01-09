@@ -1365,11 +1365,13 @@ int cil_from_host(struct __ctx_buff *ctx)
 		obs_point = TRACE_FROM_PROXY;
 
 #if defined(ENABLE_L7_LB)
-	if (magic == MARK_MAGIC_PROXY_EGRESS_EPID) {
-		/* extracted identity is actually the endpoint ID */
-		ret = tail_call_egress_policy(ctx, (__u16)identity);
-		return send_drop_notify_error(ctx, UNKNOWN_ID, ret, CTX_ACT_DROP,
-					      METRIC_EGRESS);
+	if ((ctx->mark & MARK_MAGIC_HOST_MASK) == MARK_MAGIC_PROXY_EGRESS_EPID) {
+		__u32 lxc_id = get_epid(ctx);
+
+		ctx->mark = 0;
+		ret = tail_call_egress_policy(ctx, (__u16)lxc_id);
+
+		return send_drop_notify_error(ctx, UNKNOWN_ID, ret, METRIC_EGRESS);
 	}
 #endif
 
